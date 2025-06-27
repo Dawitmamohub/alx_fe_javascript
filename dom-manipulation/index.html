@@ -62,10 +62,22 @@
     .active-category {
       background-color: #27ae60;
     }
+    .data-actions {
+      margin: 20px 0;
+    }
+    .hidden {
+      display: none;
+    }
   </style>
 </head>
 <body>
   <h1>Dynamic Quote Generator</h1>
+  
+  <div class="data-actions">
+    <button id="exportQuotes">Export Quotes</button>
+    <button id="importQuotes">Import Quotes</button>
+    <input type="file" id="importFile" class="hidden" accept=".json" />
+  </div>
   
   <div class="category-filter">
     <h3>Filter by Category:</h3>
@@ -88,7 +100,7 @@
     <div>
       <input id="newQuoteCategory" type="text" placeholder="Enter quote category" />
     </div>
-    <button onclick="addQuote()">Add Quote</button>
+    <button id="addQuoteBtn">Add Quote</button>
   </div>
   
   <script src="script.js"></script>
