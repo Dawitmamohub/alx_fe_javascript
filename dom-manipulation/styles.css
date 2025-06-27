@@ -28,6 +28,12 @@ body {
   color: #3498db;
 }
 
+.quote-meta {
+  font-size: 0.8em;
+  color: #666;
+  margin-top: 5px;
+}
+
 button {
   background-color: #3498db;
   color: white;
@@ -142,6 +148,12 @@ input, select {
   to { transform: translateX(0); }
 }
 
+.notification-error {
+  background-color: #ffebee;
+  border: 1px solid #ffcdd2;
+  color: #c62828;
+}
+
 .notification-warning {
   background-color: #fff3cd;
   border: 1px solid #ffeeba;
@@ -152,6 +164,32 @@ input, select {
   background-color: #d4edda;
   border: 1px solid #c3e6cb;
   color: #155724;
+}
+
+.notification-info {
+  background-color: #e7f5fe;
+  border: 1px solid #b8e2fb;
+  color: #0c5460;
+}
+
+.notification-sync {
+  background-color: #e2e3e5;
+  border: 1px solid #d6d8db;
+  color: #383d41;
+}
+
+.notification-icon {
+  margin-right: 10px;
+  font-size: 1.2em;
+}
+
+.close-notification {
+  background: none;
+  border: none;
+  font-size: 1.2em;
+  cursor: pointer;
+  padding: 0 5px;
+  margin-left: 10px;
 }
 
 .conflict-resolution {
@@ -199,12 +237,6 @@ input, select {
   gap: 8px;
 }
 
-.quote-meta {
-  font-size: 0.8em;
-  color: #666;
-  margin-top: 5px;
-}
-
 .conflict-actions {
   margin-top: 10px;
   padding: 10px;
@@ -221,15 +253,6 @@ input, select {
   cursor: pointer;
 }
 
-.close-notification {
-  background: none;
-  border: none;
-  font-size: 1.2em;
-  cursor: pointer;
-  padding: 0 5px;
-  margin-left: 10px;
-}
-
 @media (max-width: 600px) {
   .conflict-versions {
     flex-direction: column;
@@ -242,5 +265,10 @@ input, select {
   .filter-section {
     flex-direction: column;
     align-items: flex-start;
+  }
+  
+  .notification {
+    max-width: 90%;
+    right: 5%;
   }
 }
