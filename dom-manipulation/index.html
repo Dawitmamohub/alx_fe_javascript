@@ -5,16 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dynamic Quote Generator with Sync</title>
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
   <h1>Dynamic Quote Generator with Sync</h1>
   
-  <div id="syncStatus">Initializing...</div>
+  <div id="syncStatus" class="sync-status">Initializing...</div>
   
   <div class="data-actions">
-    <button id="exportQuotes">Export Quotes</button>
-    <button id="importQuotes">Import Quotes</button>
-    <button id="manualSync">Sync Now</button>
+    <button id="exportQuotes"><i class="fas fa-file-export"></i> Export Quotes</button>
+    <button id="importQuotes"><i class="fas fa-file-import"></i> Import Quotes</button>
+    <button id="manualSync"><i class="fas fa-sync-alt"></i> Sync Now</button>
     <input type="file" id="importFile" class="hidden" accept=".json" />
   </div>
   
@@ -32,11 +33,11 @@
   </div>
   
   <div class="button-group">
-    <button id="newQuote">Show New Quote</button>
-    <button id="showAddForm">Add New Quote</button>
+    <button id="newQuote"><i class="fas fa-random"></i> Show New Quote</button>
+    <button id="showAddForm"><i class="fas fa-plus"></i> Add New Quote</button>
   </div>
   
-  <div id="addQuoteForm" class="form-container" style="display: none;">
+  <div id="addQuoteForm" class="form-container hidden">
     <h3>Add a New Quote</h3>
     <div>
       <input id="newQuoteText" type="text" placeholder="Enter a new quote" />
@@ -44,13 +45,13 @@
     <div>
       <input id="newQuoteCategory" type="text" placeholder="Enter quote category" />
     </div>
-    <button id="addQuoteBtn">Add Quote</button>
+    <button id="addQuoteBtn"><i class="fas fa-save"></i> Add Quote</button>
   </div>
   
   <div id="conflictResolution" class="conflict-resolution hidden">
-    <h3>Conflict Resolution</h3>
+    <h3><i class="fas fa-exclamation-triangle"></i> Conflict Resolution</h3>
     <div id="conflictItems"></div>
-    <button id="resolveConflicts">Accept Resolutions</button>
+    <button id="resolveConflicts"><i class="fas fa-check-circle"></i> Accept Resolutions</button>
   </div>
 
   <script src="script.js"></script>
