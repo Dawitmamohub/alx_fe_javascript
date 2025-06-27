@@ -1,3 +1,218 @@
+// Add this to the top of your script.js (if not already present)
+const NOTIFICATION_TYPES = {
+  SUCCESS: 'success',
+  ERROR: 'error',
+  WARNING: 'warning',
+  INFO: 'info',
+  SYNC: 'sync'
+};
+
+// Replace any existing showNotification function with this enhanced version
+function showNotification(message, type = NOTIFICATION_TYPES.INFO) {
+  // Remove any existing notifications
+  document.querySelectorAll('.notification').forEach(el => el.remove());
+
+  const notification = document.createElement('div');
+  notification.className = `notification notification-${type}`;
+  
+  const icons = {
+    [NOTIFICATION_TYPES.SUCCESS]: '✅',
+    [NOTIFICATION_TYPES.ERROR]: '❌',
+    [NOTIFICATION_TYPES.WARNING]: '⚠️',
+    [NOTIFICATION_TYPES.INFO]: 'ℹ️',
+    [NOTIFICATION_TYPES.SYNC]: '🔄'
+  };
+
+  notification.innerHTML = `
+    <span class="notification-icon">${icons[type] || icons[NOTIFICATION_TYPES.INFO]}</span>
+    <p class="notification-message">${message}</p>
+    <button class="close-notification">&times;</button>
+  `;
+
+  notification.querySelector('.close-notification').addEventListener('click', () => {
+    notification.remove();
+  });
+
+  document.body.appendChild(notification);
+
+  // Auto-hide after 5 seconds
+  setTimeout(() => {
+    notification.style.opacity = '0';
+    setTimeout(() => notification.remove(), 300);
+  }, 5000);
+}
+
+// Update all sync-related functions to use the new notification system:
+
+// In syncWithServer function:
+async function syncWithServer() {
+  try {
+    updateSyncStatus('Connecting to server...');
+    showNotification('Starting synchronization with server...', NOTIFICATION_TYPES.SYNC);
+    
+    const serverQuotes = await fetchQuotesFromServer();
+    showNotification('Successfully fetched quotes from server', NOTIFICATION_TYPES.SUCCESS);
+    
+    const mergeResult = syncQuotes(quotes, serverQuotes);
+    
+    if (mergeResult.conflicts.length > 0) {
+      conflicts = mergeResult.conflicts;
+      showConflictResolution(conflicts);
+      updateSyncStatus(`Resolve ${conflicts.length} conflict(s)`, true);
+      showNotification(`Found ${conflicts.length} conflicts that need resolution`, NOTIFICATION_TYPES.WARNING);
+      return;
+    }
+    
+    if (mergeResult.updated) {
+      quotes = mergeResult.mergedQuotes;
+      saveQuotes(false);
+      updateCategories();
+      populateCategories();
+      showRandomQuote();
+      showNotification('Quotes updated from server', NOTIFICATION_TYPES.SUCCESS);
+    }
+    
+    if (pendingChanges) {
+      updateSyncStatus('Uploading changes to server...');
+      showNotification('Uploading local changes to server...', NOTIFICATION_TYPES.SYNC);
+      await postQuotesToServer(quotes);
+      showNotification('Quotes successfully synced with server!', NOTIFICATION_TYPES.SUCCESS); // This replaces the alert
+    }
+    
+    lastSyncTime = new Date();
+    pendingChanges = false;
+    updateSyncStatus(`Synced at ${formatTime(lastSyncTime)}`);
+    
+  } catch (error) {
+    console.error('Sync error:', error);
+    updateSyncStatus('Sync failed - will retry', true);
+    showNotification(`Sync failed: ${error.message}`, NOTIFICATION_TYPES.ERROR);
+    
+    clearInterval(syncTimer);
+    syncTimer = setInterval(syncWithServer, 10000);
+  }
+}
+
+// In resolveConflicts function:
+function resolveConflicts() {
+  const resolvedQuotes = [...quotes];
+  
+  conflicts.forEach((conflict, index) => {
+    const selected = document.querySelector(`input[name="resolve-${index}"]:checked`).value;
+    let resolvedQuote;
+    
+    switch(selected) {
+      case 'local':
+        resolvedQuote = conflict.local;
+        showNotification('Kept local version of quote', NOTIFICATION_TYPES.INFO);
+        break;
+      case 'server':
+        resolvedQuote = conflict.server;
+        showNotification('Used server version of quote', NOTIFICATION_TYPES.INFO);
+        break;
+      case 'merge':
+        resolvedQuote = {
+          ...conflict.server,
+          text: conflict.local.text,
+          updatedAt: new Date().toISOString()
+        };
+        showNotification('Merged local and server versions', NOTIFICATION_TYPES.INFO);
+        break;
+    }
+    
+    const quoteIndex = resolvedQuotes.findIndex(q => q.id.toString() === conflict.key);
+    if (quoteIndex !== -1) {
+      resolvedQuotes[quoteIndex] = resolvedQuote;
+    } else {
+      resolvedQuotes.push(resolvedQuote);
+    }
+  });
+  
+  quotes = resolvedQuotes;
+  conflicts = [];
+  saveQuotes();
+  updateCategories();
+  populateCategories();
+  elements.conflictResolution.classList.add('hidden');
+  showNotification('All conflicts resolved successfully!', NOTIFICATION_TYPES.SUCCESS);
+  
+  setTimeout(syncWithServer, 1000);
+}
+
+// In addQuote function:
+function addQuote() {
+  const text = elements.newQuoteText.value.trim();
+  const category = elements.newQuoteCategory.value.trim();
+  
+  if (text && category) {
+    const newQuote = {
+      id: Date.now(),
+      text,
+      category,
+      createdAt: new Date().toISOString()
+    };
+    
+    quotes.push(newQuote);
+    saveQuotes();
+    updateCategories();
+    populateCategories();
+    
+    elements.newQuoteText.value = '';
+    elements.newQuoteCategory.value = '';
+    elements.addQuoteForm.classList.add('hidden');
+    
+    selectedCategory = category;
+    elements.categoryFilter.value = category;
+    localStorage.setItem('lastFilter', category);
+    updateActiveFilterDisplay();
+    showRandomQuote();
+    
+    showNotification('Quote added successfully! It will be synced with the server shortly.', NOTIFICATION_TYPES.SUCCESS);
+  } else {
+    showNotification('Please enter both a quote and a category', NOTIFICATION_TYPES.ERROR);
+  }
+}
+
+// In importFromJsonFile function:
+function importFromJsonFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  const fileReader = new FileReader();
+  fileReader.onload = function(e) {
+    try {
+      const importedQuotes = JSON.parse(e.target.result);
+      
+      if (!Array.isArray(importedQuotes)) {
+        throw new Error('Invalid format: Expected an array of quotes');
+      }
+      
+      const validQuotes = importedQuotes.filter(quote => 
+        quote.text && quote.category &&
+        typeof quote.text === 'string' && 
+        typeof quote.category === 'string'
+      );
+      
+      if (validQuotes.length === 0) {
+        throw new Error('No valid quotes found in the file');
+      }
+      
+      quotes.push(...validQuotes);
+      saveQuotes();
+      updateCategories();
+      populateCategories();
+      showRandomQuote();
+      
+      event.target.value = '';
+      showNotification(`Successfully imported ${validQuotes.length} quotes! They will be synced with the server shortly.`, NOTIFICATION_TYPES.SUCCESS);
+    } catch (error) {
+      showNotification('Error importing quotes: ' + error.message, NOTIFICATION_TYPES.ERROR);
+      console.error('Import error:', error);
+    }
+  };
+  fileReader.readAsText(file);
+}
+
 // Configuration
 const SYNC_INTERVAL = 30000; // 30 seconds
 const SERVER_STORAGE_KEY = 'serverQuotes';
