@@ -1,6 +1,7 @@
 // Quotes database - will be loaded from local storage
 let quotes = [];
 let categories = [];
+let selectedCategory = null; // Track the currently selected category
 
 // DOM elements
 const quoteDisplay = document.getElementById('quoteDisplay');
@@ -13,9 +14,6 @@ const activeFilter = document.getElementById('activeFilter');
 const exportQuotesBtn = document.getElementById('exportQuotes');
 const importQuotesBtn = document.getElementById('importQuotes');
 const importFileInput = document.getElementById('importFile');
-
-// Current category filter (null means all categories)
-let currentCategory = null;
 
 // Initialize the app
 function init() {
@@ -68,8 +66,8 @@ function loadQuotes() {
 // Load last selected filter from local storage
 function loadLastFilter() {
   const savedFilter = localStorage.getItem('lastFilter');
-  if (savedFilter) {
-    currentCategory = savedFilter === 'all' ? null : savedFilter;
+  if (savedFilter && savedFilter !== 'all') {
+    selectedCategory = savedFilter;
     categoryFilter.value = savedFilter;
     updateActiveFilterDisplay();
   }
@@ -78,12 +76,6 @@ function loadLastFilter() {
 // Save quotes to local storage
 function saveQuotes() {
   localStorage.setItem('quotes', JSON.stringify(quotes));
-}
-
-// Save current filter to local storage
-function saveCurrentFilter() {
-  const filterValue = currentCategory ? currentCategory : 'all';
-  localStorage.setItem('lastFilter', filterValue);
 }
 
 // Extract unique categories from quotes
@@ -108,18 +100,18 @@ function populateCategories() {
   });
   
   // Restore selected filter if available
-  if (currentCategory && categories.includes(currentCategory)) {
-    categoryFilter.value = currentCategory;
+  if (selectedCategory && categories.includes(selectedCategory)) {
+    categoryFilter.value = selectedCategory;
   }
 }
 
 // Filter quotes based on selected category
 function filterQuotes() {
   const selectedValue = categoryFilter.value;
-  currentCategory = selectedValue === 'all' ? null : selectedValue;
+  selectedCategory = selectedValue === 'all' ? null : selectedValue;
   
   // Save the current filter
-  saveCurrentFilter();
+  localStorage.setItem('lastFilter', selectedCategory || 'all');
   
   // Update the active filter display
   updateActiveFilterDisplay();
@@ -130,8 +122,8 @@ function filterQuotes() {
 
 // Update the active filter display
 function updateActiveFilterDisplay() {
-  if (currentCategory) {
-    activeFilter.textContent = currentCategory;
+  if (selectedCategory) {
+    activeFilter.textContent = selectedCategory;
     activeFilter.classList.remove('hidden');
   } else {
     activeFilter.classList.add('hidden');
@@ -140,8 +132,8 @@ function updateActiveFilterDisplay() {
 
 // Display a random quote
 function showRandomQuote() {
-  let filteredQuotes = currentCategory 
-    ? quotes.filter(quote => quote.category === currentCategory)
+  let filteredQuotes = selectedCategory 
+    ? quotes.filter(quote => quote.category === selectedCategory)
     : quotes;
   
   if (filteredQuotes.length === 0) {
@@ -160,7 +152,6 @@ function showRandomQuote() {
     <p class="quote-category">— ${quote.category}</p>
   `;
   
-  // Store the last viewed quote in session storage
   sessionStorage.setItem('lastViewedQuote', JSON.stringify(quote));
 }
 
@@ -195,10 +186,10 @@ function addQuote() {
     // Hide the form
     addQuoteForm.style.display = 'none';
     
-    // Show the new quote
-    currentCategory = category;
+    // Automatically select the new category
+    selectedCategory = category;
     categoryFilter.value = category;
-    saveCurrentFilter();
+    localStorage.setItem('lastFilter', category);
     updateActiveFilterDisplay();
     showRandomQuote();
     
