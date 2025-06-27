@@ -17,6 +17,7 @@
       padding: 20px;
       border-left: 5px solid #3498db;
       background-color: #f8f9fa;
+      min-height: 120px;
     }
     .quote-text {
       font-size: 1.2em;
@@ -45,13 +46,16 @@
       border: 1px solid #ddd;
       border-radius: 5px;
     }
-    input {
+    input, select {
       padding: 8px;
       margin: 5px;
       width: 300px;
     }
-    .category-filter {
+    .filter-section {
       margin: 20px 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
     .category-btn {
       background-color: #2ecc71;
@@ -68,6 +72,14 @@
     .hidden {
       display: none;
     }
+    .category-tag {
+      display: inline-block;
+      background-color: #e0f7fa;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 0.8em;
+      margin-left: 5px;
+    }
   </style>
 </head>
 <body>
@@ -79,9 +91,12 @@
     <input type="file" id="importFile" class="hidden" accept=".json" />
   </div>
   
-  <div class="category-filter">
+  <div class="filter-section">
     <h3>Filter by Category:</h3>
-    <div id="categoryButtons"></div>
+    <select id="categoryFilter">
+      <option value="all">All Categories</option>
+    </select>
+    <span id="activeFilter" class="category-tag hidden"></span>
   </div>
   
   <div id="quoteDisplay">

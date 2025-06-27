@@ -1,5 +1,6 @@
 // Quotes database - will be loaded from local storage
 let quotes = [];
+let categories = [];
 
 // DOM elements
 const quoteDisplay = document.getElementById('quoteDisplay');
@@ -7,7 +8,8 @@ const newQuoteBtn = document.getElementById('newQuote');
 const showAddFormBtn = document.getElementById('showAddForm');
 const addQuoteForm = document.getElementById('addQuoteForm');
 const addQuoteBtn = document.getElementById('addQuoteBtn');
-const categoryButtonsContainer = document.getElementById('categoryButtons');
+const categoryFilter = document.getElementById('categoryFilter');
+const activeFilter = document.getElementById('activeFilter');
 const exportQuotesBtn = document.getElementById('exportQuotes');
 const importQuotesBtn = document.getElementById('importQuotes');
 const importFileInput = document.getElementById('importFile');
@@ -20,6 +22,9 @@ function init() {
   // Load quotes from local storage
   loadQuotes();
   
+  // Load last selected filter from local storage
+  loadLastFilter();
+  
   // Display a random quote on page load
   showRandomQuote();
   
@@ -30,18 +35,13 @@ function init() {
   exportQuotesBtn.addEventListener('click', exportQuotes);
   importQuotesBtn.addEventListener('click', () => importFileInput.click());
   importFileInput.addEventListener('change', importFromJsonFile);
+  categoryFilter.addEventListener('change', filterQuotes);
   
-  // Generate category buttons
-  updateCategoryButtons();
+  // Populate categories dropdown
+  populateCategories();
   
   // Store the current timestamp in session storage
   sessionStorage.setItem('lastVisit', new Date().toISOString());
-  
-  // Display last visit time if available
-  const lastVisit = sessionStorage.getItem('lastVisit');
-  if (lastVisit) {
-    console.log('Last visit:', new Date(lastVisit).toLocaleString());
-  }
 }
 
 // Load quotes from local storage
@@ -49,6 +49,7 @@ function loadQuotes() {
   const savedQuotes = localStorage.getItem('quotes');
   if (savedQuotes) {
     quotes = JSON.parse(savedQuotes);
+    updateCategories();
   } else {
     // Default quotes if none are saved
     quotes = [
@@ -60,12 +61,81 @@ function loadQuotes() {
       { text: "The way to get started is to quit talking and begin doing.", category: "Productivity" }
     ];
     saveQuotes();
+    updateCategories();
+  }
+}
+
+// Load last selected filter from local storage
+function loadLastFilter() {
+  const savedFilter = localStorage.getItem('lastFilter');
+  if (savedFilter) {
+    currentCategory = savedFilter === 'all' ? null : savedFilter;
+    categoryFilter.value = savedFilter;
+    updateActiveFilterDisplay();
   }
 }
 
 // Save quotes to local storage
 function saveQuotes() {
   localStorage.setItem('quotes', JSON.stringify(quotes));
+}
+
+// Save current filter to local storage
+function saveCurrentFilter() {
+  const filterValue = currentCategory ? currentCategory : 'all';
+  localStorage.setItem('lastFilter', filterValue);
+}
+
+// Extract unique categories from quotes
+function updateCategories() {
+  categories = [...new Set(quotes.map(quote => quote.category))];
+  categories.sort();
+}
+
+// Populate categories dropdown
+function populateCategories() {
+  // Clear existing options except the first one
+  while (categoryFilter.options.length > 1) {
+    categoryFilter.remove(1);
+  }
+  
+  // Add categories to dropdown
+  categories.forEach(category => {
+    const option = document.createElement('option');
+    option.value = category;
+    option.textContent = category;
+    categoryFilter.appendChild(option);
+  });
+  
+  // Restore selected filter if available
+  if (currentCategory && categories.includes(currentCategory)) {
+    categoryFilter.value = currentCategory;
+  }
+}
+
+// Filter quotes based on selected category
+function filterQuotes() {
+  const selectedValue = categoryFilter.value;
+  currentCategory = selectedValue === 'all' ? null : selectedValue;
+  
+  // Save the current filter
+  saveCurrentFilter();
+  
+  // Update the active filter display
+  updateActiveFilterDisplay();
+  
+  // Show a random quote from the filtered selection
+  showRandomQuote();
+}
+
+// Update the active filter display
+function updateActiveFilterDisplay() {
+  if (currentCategory) {
+    activeFilter.textContent = currentCategory;
+    activeFilter.classList.remove('hidden');
+  } else {
+    activeFilter.classList.add('hidden');
+  }
 }
 
 // Display a random quote
@@ -114,6 +184,10 @@ function addQuote() {
     // Save to local storage
     saveQuotes();
     
+    // Update categories
+    updateCategories();
+    populateCategories();
+    
     // Clear the form
     textInput.value = '';
     categoryInput.value = '';
@@ -121,11 +195,11 @@ function addQuote() {
     // Hide the form
     addQuoteForm.style.display = 'none';
     
-    // Update category buttons
-    updateCategoryButtons();
-    
     // Show the new quote
     currentCategory = category;
+    categoryFilter.value = category;
+    saveCurrentFilter();
+    updateActiveFilterDisplay();
     showRandomQuote();
     
     // Show success message
@@ -133,39 +207,6 @@ function addQuote() {
   } else {
     alert('Please enter both a quote and a category.');
   }
-}
-
-// Update the category filter buttons
-function updateCategoryButtons() {
-  // Get all unique categories
-  const categories = [...new Set(quotes.map(quote => quote.category))];
-  
-  // Clear existing buttons
-  categoryButtonsContainer.innerHTML = '';
-  
-  // Add "All" button
-  const allButton = document.createElement('button');
-  allButton.textContent = 'All';
-  allButton.className = !currentCategory ? 'category-btn active-category' : 'category-btn';
-  allButton.addEventListener('click', () => {
-    currentCategory = null;
-    updateCategoryButtons();
-    showRandomQuote();
-  });
-  categoryButtonsContainer.appendChild(allButton);
-  
-  // Add buttons for each category
-  categories.forEach(category => {
-    const button = document.createElement('button');
-    button.textContent = category;
-    button.className = currentCategory === category ? 'category-btn active-category' : 'category-btn';
-    button.addEventListener('click', () => {
-      currentCategory = category;
-      updateCategoryButtons();
-      showRandomQuote();
-    });
-    categoryButtonsContainer.appendChild(button);
-  });
 }
 
 // Export quotes to JSON file
@@ -213,7 +254,8 @@ function importFromJsonFile(event) {
       // Add the new quotes
       quotes.push(...validQuotes);
       saveQuotes();
-      updateCategoryButtons();
+      updateCategories();
+      populateCategories();
       showRandomQuote();
       
       // Reset file input
