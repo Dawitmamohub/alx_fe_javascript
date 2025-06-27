@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dynamic Quote Generator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    #quoteDisplay {
+      margin: 30px 0;
+      padding: 20px;
+      border-left: 5px solid #3498db;
+      background-color: #f8f9fa;
+    }
+    .quote-text {
+      font-size: 1.2em;
+      font-style: italic;
+    }
+    .quote-category {
+      margin-top: 10px;
+      font-weight: bold;
+      color: #3498db;
+    }
+    button {
+      background-color: #3498db;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      margin: 5px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #2980b9;
+    }
+    .form-container {
+      margin-top: 30px;
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+    input {
+      padding: 8px;
+      margin: 5px;
+      width: 300px;
+    }
+    .category-filter {
+      margin: 20px 0;
+    }
+    .category-btn {
+      background-color: #2ecc71;
+    }
+    .category-btn:hover {
+      background-color: #27ae60;
+    }
+    .active-category {
+      background-color: #27ae60;
+    }
+  </style>
+</head>
+<body>
+  <h1>Dynamic Quote Generator</h1>
+  
+  <div class="category-filter">
+    <h3>Filter by Category:</h3>
+    <div id="categoryButtons"></div>
+  </div>
+  
+  <div id="quoteDisplay">
+    <p class="quote-text">Click "Show New Quote" to see your first quote!</p>
+    <p class="quote-category"></p>
+  </div>
+  
+  <button id="newQuote">Show New Quote</button>
+  <button id="showAddForm">Add New Quote</button>
+  
+  <div id="addQuoteForm" class="form-container" style="display: none;">
+    <h3>Add a New Quote</h3>
+    <div>
+      <input id="newQuoteText" type="text" placeholder="Enter a new quote" />
+    </div>
+    <div>
+      <input id="newQuoteCategory" type="text" placeholder="Enter quote category" />
+    </div>
+    <button onclick="addQuote()">Add Quote</button>
+  </div>
+  
+  <script src="script.js"></script>
+</body>
+</html>
