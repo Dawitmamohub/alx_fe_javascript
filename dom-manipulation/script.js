@@ -29,6 +29,9 @@ function init() {
   
   // Generate category buttons
   updateCategoryButtons();
+  
+  // Create the add quote form dynamically (even though it's in HTML, this shows how to do it via JS)
+  createAddQuoteForm();
 }
 
 // Display a random quote
@@ -54,9 +57,36 @@ function showRandomQuote() {
   `;
 }
 
+// Create the add quote form dynamically
+function createAddQuoteForm() {
+  // In our case, the form is already in HTML, but this shows how to create it via JS
+  // This is just for demonstration since we already have the form in HTML
+  const formContainer = document.createElement('div');
+  formContainer.className = 'form-container';
+  formContainer.style.display = 'none';
+  formContainer.id = 'addQuoteForm';
+  
+  formContainer.innerHTML = `
+    <h3>Add a New Quote</h3>
+    <div>
+      <input id="newQuoteText" type="text" placeholder="Enter a new quote" />
+    </div>
+    <div>
+      <input id="newQuoteCategory" type="text" placeholder="Enter quote category" />
+    </div>
+    <button id="addQuoteBtn">Add Quote</button>
+  `;
+  
+  document.body.appendChild(formContainer);
+  
+  // Add event listener to the dynamically created button
+  document.getElementById('addQuoteBtn').addEventListener('click', addQuote);
+}
+
 // Toggle the add quote form visibility
 function toggleAddForm() {
-  addQuoteForm.style.display = addQuoteForm.style.display === 'none' ? 'block' : 'none';
+  const form = document.getElementById('addQuoteForm');
+  form.style.display = form.style.display === 'none' ? 'block' : 'none';
 }
 
 // Add a new quote to the database
@@ -68,7 +98,7 @@ function addQuote() {
   const category = categoryInput.value.trim();
   
   if (text && category) {
-    // Add the new quote
+    // Add the new quote to the array
     quotes.push({ text, category });
     
     // Clear the form
@@ -76,12 +106,16 @@ function addQuote() {
     categoryInput.value = '';
     
     // Hide the form
-    addQuoteForm.style.display = 'none';
+    document.getElementById('addQuoteForm').style.display = 'none';
     
-    // Update category buttons
+    // Update category buttons to include the new category
     updateCategoryButtons();
     
-    // Show the new quote
+    // Show a confirmation (could be a more elegant notification)
+    alert('Quote added successfully!');
+    
+    // Show the new quote (optional)
+    currentCategory = category; // Filter to the new category
     showRandomQuote();
   } else {
     alert('Please enter both a quote and a category.');
