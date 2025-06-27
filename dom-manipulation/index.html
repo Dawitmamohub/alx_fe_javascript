@@ -3,55 +3,70 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dynamic Quote Generator with Sync</title>
+  <title>QuoteSync - Dynamic Quote Generator</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <h1>Dynamic Quote Generator with Sync</h1>
-  
-  <div id="syncStatus" class="sync-status">Initializing...</div>
-  
-  <div class="data-actions">
-    <button id="exportQuotes"><i class="fas fa-file-export"></i> Export Quotes</button>
-    <button id="importQuotes"><i class="fas fa-file-import"></i> Import Quotes</button>
-    <button id="manualSync"><i class="fas fa-sync-alt"></i> Sync Now</button>
-    <input type="file" id="importFile" class="hidden" accept=".json" />
-  </div>
-  
-  <div class="filter-section">
-    <h3>Filter by Category:</h3>
-    <select id="categoryFilter">
-      <option value="all">All Categories</option>
-    </select>
-    <span id="activeFilter" class="category-tag hidden"></span>
-  </div>
-  
-  <div id="quoteDisplay">
-    <p class="quote-text">Click "Show New Quote" to see your first quote!</p>
-    <p class="quote-category"></p>
-  </div>
-  
-  <div class="button-group">
-    <button id="newQuote"><i class="fas fa-random"></i> Show New Quote</button>
-    <button id="showAddForm"><i class="fas fa-plus"></i> Add New Quote</button>
-  </div>
-  
-  <div id="addQuoteForm" class="form-container hidden">
-    <h3>Add a New Quote</h3>
-    <div>
-      <input id="newQuoteText" type="text" placeholder="Enter a new quote" />
-    </div>
-    <div>
-      <input id="newQuoteCategory" type="text" placeholder="Enter quote category" />
-    </div>
-    <button id="addQuoteBtn"><i class="fas fa-save"></i> Add Quote</button>
-  </div>
-  
-  <div id="conflictResolution" class="conflict-resolution hidden">
-    <h3><i class="fas fa-exclamation-triangle"></i> Conflict Resolution</h3>
-    <div id="conflictItems"></div>
-    <button id="resolveConflicts"><i class="fas fa-check-circle"></i> Accept Resolutions</button>
+  <div class="app-container">
+    <header>
+      <h1><i class="fas fa-quote-left"></i> QuoteSync</h1>
+      <div id="syncStatus" class="sync-status">
+        <span class="sync-icon">🔄</span>
+        <span class="sync-message">Initializing...</span>
+      </div>
+    </header>
+
+    <main>
+      <section class="toolbar">
+        <div class="data-actions">
+          <button id="exportQuotes"><i class="fas fa-file-export"></i> Export</button>
+          <button id="importQuotes"><i class="fas fa-file-import"></i> Import</button>
+          <button id="manualSync"><i class="fas fa-sync-alt"></i> Sync Now</button>
+          <input type="file" id="importFile" class="hidden" accept=".json" />
+        </div>
+
+        <div class="filter-section">
+          <h3><i class="fas fa-filter"></i> Filter:</h3>
+          <select id="categoryFilter">
+            <option value="all">All Categories</option>
+          </select>
+          <span id="activeFilter" class="category-tag hidden"></span>
+        </div>
+      </section>
+
+      <section id="quoteDisplay" class="quote-display">
+        <p class="quote-text">Click "New Quote" to begin!</p>
+        <p class="quote-category"></p>
+      </section>
+
+      <div class="button-group">
+        <button id="newQuote"><i class="fas fa-random"></i> New Quote</button>
+        <button id="showAddForm"><i class="fas fa-plus"></i> Add Quote</button>
+      </div>
+
+      <section id="addQuoteForm" class="form-container hidden">
+        <h3><i class="fas fa-plus-circle"></i> Add New Quote</h3>
+        <div class="form-group">
+          <textarea id="newQuoteText" placeholder="Enter your quote"></textarea>
+        </div>
+        <div class="form-group">
+          <input id="newQuoteCategory" type="text" placeholder="Category" />
+        </div>
+        <button id="addQuoteBtn"><i class="fas fa-save"></i> Save Quote</button>
+      </section>
+
+      <section id="conflictResolution" class="conflict-resolution hidden">
+        <div class="conflict-header">
+          <h3><i class="fas fa-exclamation-triangle"></i> Resolve Conflicts</h3>
+          <span id="conflictCount" class="badge">0 conflicts</span>
+        </div>
+        <div id="conflictItems" class="conflict-items"></div>
+        <button id="resolveConflicts"><i class="fas fa-check-circle"></i> Apply Resolutions</button>
+      </section>
+    </main>
+
+    <div id="notificationCenter" class="notification-center"></div>
   </div>
 
   <script src="script.js"></script>

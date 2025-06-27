@@ -39,16 +39,18 @@ const elements = {
   conflictItems: document.getElementById('conflictItems'),
   resolveConflictsBtn: document.getElementById('resolveConflicts'),
   newQuoteText: document.getElementById('newQuoteText'),
-  newQuoteCategory: document.getElementById('newQuoteCategory')
+  newQuoteCategory: document.getElementById('newQuoteCategory'),
+  conflictCount: document.getElementById('conflictCount'),
+  notificationCenter: document.getElementById('notificationCenter')
 };
 
 /* ========== NOTIFICATION SYSTEM ========== */
-function showNotification(message, type = NOTIFICATION_TYPES.INFO) {
-  // Remove any existing notifications
-  document.querySelectorAll('.notification').forEach(el => el.remove());
-
+function showNotification(message, type = NOTIFICATION_TYPES.INFO, options = {}) {
   const notification = document.createElement('div');
-  notification.className = `notification notification-${type}`;
+  notification.className = `notification ${type}`;
+  
+  const now = new Date();
+  const timestamp = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   
   const icons = {
     [NOTIFICATION_TYPES.SUCCESS]: '✅',
@@ -59,22 +61,42 @@ function showNotification(message, type = NOTIFICATION_TYPES.INFO) {
   };
 
   notification.innerHTML = `
-    <span class="notification-icon">${icons[type] || icons[NOTIFICATION_TYPES.INFO]}</span>
+    <div class="notification-header">
+      <div class="notification-title">
+        <span class="notification-icon">${icons[type] || icons[NOTIFICATION_TYPES.INFO]}</span>
+        <span>${options.title || type.charAt(0).toUpperCase() + type.slice(1)}</span>
+      </div>
+      <span class="notification-time">${timestamp}</span>
+    </div>
     <p class="notification-message">${message}</p>
-    <button class="close-notification">&times;</button>
   `;
 
-  notification.querySelector('.close-notification').addEventListener('click', () => {
-    notification.remove();
-  });
+  if (options.actions) {
+    const actionsDiv = document.createElement('div');
+    actionsDiv.className = 'notification-actions';
+    options.actions.forEach(action => {
+      const btn = document.createElement('button');
+      btn.textContent = action.label;
+      btn.addEventListener('click', action.handler);
+      actionsDiv.appendChild(btn);
+    });
+    notification.appendChild(actionsDiv);
+  }
 
-  document.body.appendChild(notification);
+  const closeBtn = document.createElement('button');
+  closeBtn.className = 'close-notification';
+  closeBtn.innerHTML = '&times;';
+  closeBtn.addEventListener('click', () => notification.remove());
+  notification.querySelector('.notification-header').appendChild(closeBtn);
 
-  // Auto-hide after 5 seconds
+  elements.notificationCenter.prepend(notification);
+
+  // Auto-hide after timeout (default 5s, longer for errors)
+  const timeout = type === NOTIFICATION_TYPES.ERROR ? 8000 : 5000;
   setTimeout(() => {
     notification.style.opacity = '0';
     setTimeout(() => notification.remove(), 300);
-  }, 5000);
+  }, timeout);
 }
 
 /* ========== INITIALIZATION ========== */
@@ -96,15 +118,8 @@ function setupEventListeners() {
   elements.importQuotesBtn.addEventListener('click', () => elements.importFileInput.click());
   elements.importFileInput.addEventListener('change', importFromJsonFile);
   elements.categoryFilter.addEventListener('change', filterQuotes);
-  elements.manualSyncBtn.addEventListener('click', syncWithServer);
+  elements.manualSyncBtn.addEventListener('click', triggerManualSync);
   elements.resolveConflictsBtn.addEventListener('click', resolveConflicts);
-  
-  elements.manualSyncBtn.addEventListener('click', () => {
-    elements.manualSyncBtn.disabled = true;
-    setTimeout(() => {
-      elements.manualSyncBtn.disabled = false;
-    }, 1000);
-  });
   
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) syncWithServer();
@@ -130,21 +145,45 @@ function initSync() {
   }, SYNC_INTERVAL);
 }
 
+function triggerManualSync() {
+  elements.manualSyncBtn.disabled = true;
+  showNotification('Manual sync initiated...', NOTIFICATION_TYPES.SYNC);
+  syncWithServer()
+    .finally(() => {
+      setTimeout(() => {
+        elements.manualSyncBtn.disabled = false;
+      }, 1000);
+    });
+}
+
 async function syncWithServer() {
   try {
     updateSyncStatus('Connecting to server...');
-    showNotification('Starting synchronization with server...', NOTIFICATION_TYPES.SYNC);
+    showNotification('Starting synchronization with server...', NOTIFICATION_TYPES.SYNC, {
+      title: 'Sync Started'
+    });
     
     const serverQuotes = await fetchQuotesFromServer();
-    showNotification('Successfully fetched quotes from server', NOTIFICATION_TYPES.SUCCESS);
+    showNotification('Successfully fetched quotes from server', NOTIFICATION_TYPES.SUCCESS, {
+      title: 'Sync Update'
+    });
     
     const mergeResult = syncQuotes(quotes, serverQuotes);
     
     if (mergeResult.conflicts.length > 0) {
       conflicts = mergeResult.conflicts;
+      updateConflictCount();
       showConflictResolution(conflicts);
       updateSyncStatus(`Resolve ${conflicts.length} conflict(s)`, true);
-      showNotification(`Found ${conflicts.length} conflicts that need resolution`, NOTIFICATION_TYPES.WARNING);
+      showNotification(`Found ${conflicts.length} conflicts that need resolution`, NOTIFICATION_TYPES.WARNING, {
+        title: 'Conflict Detected',
+        actions: [{
+          label: 'View Conflicts',
+          handler: () => {
+            elements.conflictResolution.scrollIntoView({ behavior: 'smooth' });
+          }
+        }]
+      });
       return;
     }
     
@@ -154,14 +193,20 @@ async function syncWithServer() {
       updateCategories();
       populateCategories();
       showRandomQuote();
-      showNotification('Quotes updated from server', NOTIFICATION_TYPES.SUCCESS);
+      showNotification('Quotes updated from server', NOTIFICATION_TYPES.SUCCESS, {
+        title: 'Data Updated'
+      });
     }
     
     if (pendingChanges) {
       updateSyncStatus('Uploading changes to server...');
-      showNotification('Uploading local changes to server...', NOTIFICATION_TYPES.SYNC);
+      showNotification('Uploading local changes to server...', NOTIFICATION_TYPES.SYNC, {
+        title: 'Sync Update'
+      });
       await postQuotesToServer(quotes);
-      showNotification('Quotes successfully synced with server!', NOTIFICATION_TYPES.SUCCESS);
+      showNotification('Quotes successfully synced with server!', NOTIFICATION_TYPES.SUCCESS, {
+        title: 'Sync Complete'
+      });
     }
     
     lastSyncTime = new Date();
@@ -171,13 +216,20 @@ async function syncWithServer() {
   } catch (error) {
     console.error('Sync error:', error);
     updateSyncStatus('Sync failed - will retry', true);
-    showNotification(`Sync failed: ${error.message}`, NOTIFICATION_TYPES.ERROR);
+    showNotification(`Sync failed: ${error.message}`, NOTIFICATION_TYPES.ERROR, {
+      title: 'Sync Error',
+      actions: [{
+        label: 'Retry Now',
+        handler: syncWithServer
+      }]
+    });
     
     clearInterval(syncTimer);
     syncTimer = setInterval(syncWithServer, 10000);
   }
 }
 
+/* ========== DATA OPERATIONS ========== */
 async function fetchQuotesFromServer() {
   try {
     await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 500));
@@ -194,7 +246,7 @@ async function fetchQuotesFromServer() {
     if (!response.ok) throw new Error('API response not OK');
     
     const jsonData = await response.json();
-    const serverQuotes = jsonData.slice(0, 5).map((post, index) => ({
+    return jsonData.slice(0, 5).map((post, index) => ({
       id: index + 1000,
       text: post.title,
       category: 'Server',
@@ -202,12 +254,9 @@ async function fetchQuotesFromServer() {
       updatedAt: new Date().toISOString()
     }));
     
-    const localServerData = JSON.parse(localStorage.getItem(SERVER_STORAGE_KEY) || '[]');
-    return [...serverQuotes, ...localServerData];
-    
   } catch (error) {
     console.error('Using fallback server data:', error);
-    return JSON.parse(localStorage.getItem(SERVER_STORAGE_KEY) || '[]');
+    return JSON.parse(localStorage.getItem(SERVER_STORAGE_KEY) || '[]';
   }
 }
 
@@ -297,8 +346,13 @@ function syncQuotes(localQuotes, serverQuotes) {
 }
 
 /* ========== CONFLICT RESOLUTION ========== */
+function updateConflictCount() {
+  elements.conflictCount.textContent = `${conflicts.length} conflict${conflicts.length !== 1 ? 's' : ''}`;
+}
+
 function showConflictResolution(conflicts) {
   elements.conflictItems.innerHTML = '';
+  updateConflictCount();
   
   conflicts.forEach((conflict, index) => {
     const conflictEl = document.createElement('div');
@@ -344,11 +398,14 @@ function showConflictResolution(conflicts) {
   });
   
   elements.conflictResolution.classList.remove('hidden');
-  window.scrollTo(0, document.body.scrollHeight);
+  elements.conflictResolution.scrollIntoView({ behavior: 'smooth' });
 }
 
 function resolveConflicts() {
   const resolvedQuotes = [...quotes];
+  let keptLocal = 0;
+  let usedServer = 0;
+  let merged = 0;
   
   conflicts.forEach((conflict, index) => {
     const selected = document.querySelector(`input[name="resolve-${index}"]:checked`).value;
@@ -357,11 +414,11 @@ function resolveConflicts() {
     switch(selected) {
       case 'local':
         resolvedQuote = conflict.local;
-        showNotification('Kept local version of quote', NOTIFICATION_TYPES.INFO);
+        keptLocal++;
         break;
       case 'server':
         resolvedQuote = conflict.server;
-        showNotification('Used server version of quote', NOTIFICATION_TYPES.INFO);
+        usedServer++;
         break;
       case 'merge':
         resolvedQuote = {
@@ -369,7 +426,7 @@ function resolveConflicts() {
           text: conflict.local.text,
           updatedAt: new Date().toISOString()
         };
-        showNotification('Merged local and server versions', NOTIFICATION_TYPES.INFO);
+        merged++;
         break;
     }
     
@@ -387,7 +444,18 @@ function resolveConflicts() {
   updateCategories();
   populateCategories();
   elements.conflictResolution.classList.add('hidden');
-  showNotification('All conflicts resolved successfully!', NOTIFICATION_TYPES.SUCCESS);
+  
+  let resolutionMessage = 'All conflicts resolved: ';
+  const parts = [];
+  if (keptLocal > 0) parts.push(`${keptLocal} kept local`);
+  if (usedServer > 0) parts.push(`${usedServer} used server`);
+  if (merged > 0) parts.push(`${merged} merged`);
+  
+  resolutionMessage += parts.join(', ');
+  
+  showNotification(resolutionMessage, NOTIFICATION_TYPES.SUCCESS, {
+    title: 'Conflicts Resolved'
+  });
   
   setTimeout(syncWithServer, 1000);
 }
@@ -529,9 +597,13 @@ function addQuote() {
     updateActiveFilterDisplay();
     showRandomQuote();
     
-    showNotification('Quote added successfully! It will be synced with the server shortly.', NOTIFICATION_TYPES.SUCCESS);
+    showNotification('Quote added successfully! It will be synced with the server shortly.', NOTIFICATION_TYPES.SUCCESS, {
+      title: 'Quote Added'
+    });
   } else {
-    showNotification('Please enter both a quote and a category', NOTIFICATION_TYPES.ERROR);
+    showNotification('Please enter both a quote and a category', NOTIFICATION_TYPES.ERROR, {
+      title: 'Input Error'
+    });
   }
 }
 
@@ -546,6 +618,10 @@ function exportQuotes() {
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+  
+  showNotification('Quotes exported successfully!', NOTIFICATION_TYPES.SUCCESS, {
+    title: 'Export Complete'
+  });
   
   setTimeout(() => URL.revokeObjectURL(url), 100);
 }
@@ -580,9 +656,13 @@ function importFromJsonFile(event) {
       showRandomQuote();
       
       event.target.value = '';
-      showNotification(`Successfully imported ${validQuotes.length} quotes! They will be synced with the server shortly.`, NOTIFICATION_TYPES.SUCCESS);
+      showNotification(`Successfully imported ${validQuotes.length} quotes! They will be synced with the server shortly.`, NOTIFICATION_TYPES.SUCCESS, {
+        title: 'Import Complete'
+      });
     } catch (error) {
-      showNotification('Error importing quotes: ' + error.message, NOTIFICATION_TYPES.ERROR);
+      showNotification('Error importing quotes: ' + error.message, NOTIFICATION_TYPES.ERROR, {
+        title: 'Import Error'
+      });
       console.error('Import error:', error);
     }
   };
