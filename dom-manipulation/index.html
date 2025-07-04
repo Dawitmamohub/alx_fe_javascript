@@ -7,22 +7,27 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="container">
-    <h1>Dynamic Quote Generator</h1>
+  <h1>Dynamic Quote Generator</h1>
 
-    <!-- Quote display -->
-    <div id="quoteDisplay" class="quote-box"></div>
-    <button id="newQuote">Show New Quote</button>
-
-    <!-- Dynamic form will be injected here -->
-    <div id="formContainer"></div>
-
-    <!-- Import / Export Section -->
-    <div class="import-export">
-      <button onclick="exportToJsonFile()">Export Quotes (JSON)</button>
-      <input type="file" id="importFile" accept=".json" onchange="importFromJsonFile(event)" />
-    </div>
+  <div>
+    <select id="categoryFilter" onchange="filterQuotes()">
+      <option value="all">All Categories</option>
+    </select>
   </div>
+
+  <div id="quoteDisplay">No quote selected.</div>
+
+  <button id="newQuote">Show New Quote</button>
+
+  <h2>Add a New Quote</h2>
+  <input id="newQuoteText" type="text" placeholder="Enter a new quote" />
+  <input id="newQuoteCategory" type="text" placeholder="Enter quote category" />
+  <button onclick="addQuote()">Add Quote</button>
+  <div id="errorMessage" class="error"></div>
+
+  <h2>Import / Export</h2>
+  <input type="file" id="importFile" accept=".json" onchange="importFromJsonFile(event)" />
+  <button onclick="exportQuotesAsJson()">Export Quotes</button>
 
   <script src="script.js"></script>
 </body>
