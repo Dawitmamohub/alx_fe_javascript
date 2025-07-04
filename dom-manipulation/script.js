@@ -26,14 +26,32 @@ function showRandomQuote() {
   showQuote(random);
 }
 
-function addQuote() {
-  const text = document.getElementById("newQuoteText").value.trim();
-  const category = document.getElementById("newQuoteCategory").value.trim();
+async function postQuoteToServer(quote) {
+  try {
+    // JSONPlaceholder ignores data but responds with created object
+    const response = await fetch("https://jsonplaceholder.typicode.com/posts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(quote),
+    });
+    const data = await response.json();
+    console.log("Posted quote to server:", data);
+  } catch (err) {
+    console.error("Failed to post quote to server:", err);
+  }
+}
+
+async function addQuote() {
+  const textElem = document.getElementById("newQuoteText");
+  const categoryElem = document.getElementById("newQuoteCategory");
   const error = document.getElementById("errorMessage");
   error.textContent = "";
 
+  const text = textElem.value.trim();
+  const category = categoryElem.value.trim();
+
   if (!text || !category) {
-    error.textContent = "Both fields are required.";
+    error.textContent = "Both quote and category are required.";
     return;
   }
 
@@ -43,8 +61,11 @@ function addQuote() {
   populateCategories();
   showQuote(newQuote);
 
-  document.getElementById("newQuoteText").value = "";
-  document.getElementById("newQuoteCategory").value = "";
+  // Post new quote to the server
+  await postQuoteToServer(newQuote);
+
+  textElem.value = "";
+  categoryElem.value = "";
 }
 
 function populateCategories() {
@@ -122,33 +143,52 @@ function loadLastQuote() {
   }
 }
 
+// --- Server sync and conflict resolution ---
+
 async function fetchQuotesFromServer() {
   try {
     const res = await fetch("https://jsonplaceholder.typicode.com/posts");
     const data = await res.json();
-    const serverQuotes = data.slice(0, 10).map(p => ({ text: p.title, category: "Server" }));
-    resolveConflictsAndSync(serverQuotes);
+    // Convert server posts to quotes with category 'Server'
+    return data.slice(0, 10).map(post => ({
+      text: post.title,
+      category: "Server",
+    }));
   } catch (err) {
     console.error("Error fetching server quotes:", err);
+    return [];
   }
 }
 
-function resolveConflictsAndSync(serverQuotes) {
+async function syncQuotes() {
+  const serverQuotes = await fetchQuotesFromServer();
   let updated = false;
+  let conflictsResolved = false;
+
   serverQuotes.forEach(serverQuote => {
-    const exists = quotes.some(local =>
+    // Check if quote exists locally (text + category)
+    const localIndex = quotes.findIndex(local =>
       local.text === serverQuote.text && local.category === serverQuote.category
     );
-    if (!exists) {
+
+    if (localIndex === -1) {
+      // New quote from server, add locally
       quotes.push(serverQuote);
       updated = true;
+    } else {
+      // Conflict possible if local quote differs in content (unlikely here, but placeholder)
+      // For demo, assume server wins and replace local quote
+      // In real app, compare and ask user if needed
+      // (Here just simulate that server always overrides)
+      // So if serverQuote text !== local text, update local quote
+      // But since keys are the same, ignore this step for now
     }
   });
 
   if (updated) {
     saveQuotes();
     populateCategories();
-    notifyUser("New quotes synced from server.");
+    notifyUser("Quotes updated from server (sync complete).");
   }
 }
 
@@ -157,5 +197,8 @@ document.addEventListener("DOMContentLoaded", () => {
   populateCategories();
   loadLastQuote();
   document.getElementById("newQuote").addEventListener("click", showRandomQuote);
-  setInterval(fetchQuotesFromServer, 10000); // Fetch every 10 seconds
+
+  // Periodically sync quotes every 10 seconds
+  syncQuotes();
+  setInterval(syncQuotes, 10000);
 });
