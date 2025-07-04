@@ -11,6 +11,7 @@ function loadQuotes() {
 
 function showQuote(quote) {
   const display = document.getElementById("quoteDisplay");
+  display.classList.remove("empty");
   display.textContent = `${quote.text} (${quote.category})`;
   sessionStorage.setItem("lastQuote", JSON.stringify(quote));
 }
@@ -19,7 +20,9 @@ function showRandomQuote() {
   const category = document.getElementById("categoryFilter").value;
   const filtered = category === "all" ? quotes : quotes.filter(q => q.category === category);
   if (filtered.length === 0) {
-    document.getElementById("quoteDisplay").textContent = "No quotes available.";
+    const display = document.getElementById("quoteDisplay");
+    display.textContent = "No quotes available.";
+    display.classList.add("empty");
     return;
   }
   const random = filtered[Math.floor(Math.random() * filtered.length)];
@@ -91,7 +94,9 @@ function filterQuotes() {
   if (filtered.length > 0) {
     showQuote(filtered[0]);
   } else {
-    document.getElementById("quoteDisplay").textContent = "No quotes in this category.";
+    const display = document.getElementById("quoteDisplay");
+    display.textContent = "No quotes in this category.";
+    display.classList.add("empty");
   }
 }
 
@@ -153,41 +158,48 @@ async function fetchQuotesFromServer() {
       text: post.title,
       category: "Server",
     }));
-  } catch (err) {
-    console.error("Error fetching server quotes:", err);
+  } catch (e) {
+    console.error("Error fetching from server:", e);
     return [];
   }
 }
 
 async function syncQuotes() {
   const serverQuotes = await fetchQuotesFromServer();
-  let updated = false;
 
-  serverQuotes.forEach(serverQuote => {
-    const localIndex = quotes.findIndex(local =>
-      local.text === serverQuote.text && local.category === serverQuote.category
-    );
-
-    if (localIndex === -1) {
-      quotes.push(serverQuote);
-      updated = true;
+  // Conflict resolution: server data takes precedence
+  let merged = [...serverQuotes];
+  // Add any local quotes that do not exist on server (by text)
+  quotes.forEach(localQ => {
+    if (!serverQuotes.find(sq => sq.text === localQ.text)) {
+      merged.push(localQ);
     }
   });
 
-  if (updated) {
+  // Check if merged differs from current local
+  const localJson = JSON.stringify(quotes);
+  const mergedJson = JSON.stringify(merged);
+
+  if (localJson !== mergedJson) {
+    quotes = merged;
     saveQuotes();
     populateCategories();
-    notifyUser("Quotes synced with server!");  // <-- Your exact notification message here
+    notifyUser("Quotes synced with server!");
   }
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+function setupSyncInterval() {
+  // Sync every 60 seconds
+  setInterval(syncQuotes, 60000);
+}
+
+// Initialization on page load
+window.onload = () => {
   loadQuotes();
   populateCategories();
   loadLastQuote();
-  document.getElementById("newQuote").addEventListener("click", showRandomQuote);
 
-  // Periodically sync quotes every 10 seconds
-  syncQuotes();
-  setInterval(syncQuotes, 10000);
-});
+  document.getElementById("newQuote").onclick = showRandomQuote;
+
+  setupSyncInterval();
+};
