@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dynamic Quote Generator</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>Dynamic Quote Generator</h1>
+
+    <!-- Quote display -->
+    <div id="quoteDisplay" class="quote-box"></div>
+    <button id="newQuote">Show New Quote</button>
+
+    <!-- Dynamic form will be injected here -->
+    <div id="formContainer"></div>
+
+    <!-- Import / Export Section -->
+    <div class="import-export">
+      <button onclick="exportToJsonFile()">Export Quotes (JSON)</button>
+      <input type="file" id="importFile" accept=".json" onchange="importFromJsonFile(event)" />
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
