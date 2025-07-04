@@ -28,7 +28,6 @@ function showRandomQuote() {
 
 async function postQuoteToServer(quote) {
   try {
-    // JSONPlaceholder ignores data but responds with created object
     const response = await fetch("https://jsonplaceholder.typicode.com/posts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -163,32 +162,22 @@ async function fetchQuotesFromServer() {
 async function syncQuotes() {
   const serverQuotes = await fetchQuotesFromServer();
   let updated = false;
-  let conflictsResolved = false;
 
   serverQuotes.forEach(serverQuote => {
-    // Check if quote exists locally (text + category)
     const localIndex = quotes.findIndex(local =>
       local.text === serverQuote.text && local.category === serverQuote.category
     );
 
     if (localIndex === -1) {
-      // New quote from server, add locally
       quotes.push(serverQuote);
       updated = true;
-    } else {
-      // Conflict possible if local quote differs in content (unlikely here, but placeholder)
-      // For demo, assume server wins and replace local quote
-      // In real app, compare and ask user if needed
-      // (Here just simulate that server always overrides)
-      // So if serverQuote text !== local text, update local quote
-      // But since keys are the same, ignore this step for now
     }
   });
 
   if (updated) {
     saveQuotes();
     populateCategories();
-    notifyUser("Quotes updated from server (sync complete).");
+    notifyUser("Quotes synced with server!");  // <-- Your exact notification message here
   }
 }
 
