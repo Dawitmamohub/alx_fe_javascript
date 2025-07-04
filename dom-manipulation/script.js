@@ -10,8 +10,8 @@ function loadQuotes() {
 }
 
 function showQuote(quote) {
-  const quoteDisplay = document.getElementById("quoteDisplay");
-  quoteDisplay.textContent = `${quote.text} (${quote.category})`;
+  const display = document.getElementById("quoteDisplay");
+  display.textContent = `${quote.text} (${quote.category})`;
   sessionStorage.setItem("lastQuote", JSON.stringify(quote));
 }
 
@@ -94,9 +94,9 @@ function importFromJsonFile(event) {
         quotes.push(...imported);
         saveQuotes();
         populateCategories();
-        notifyUser("Quotes imported successfully!");
+        notifyUser("Quotes imported successfully.");
       } else {
-        alert("Invalid file format.");
+        alert("Invalid JSON structure.");
       }
     } catch {
       alert("Invalid JSON file.");
@@ -106,11 +106,20 @@ function importFromJsonFile(event) {
 }
 
 function notifyUser(message) {
+  const area = document.getElementById("notificationArea");
   const note = document.createElement("div");
   note.textContent = message;
   note.className = "notification";
-  document.body.prepend(note);
-  setTimeout(() => note.remove(), 4000);
+  area.innerHTML = "";
+  area.appendChild(note);
+  setTimeout(() => note.remove(), 5000);
+}
+
+function loadLastQuote() {
+  const last = sessionStorage.getItem("lastQuote");
+  if (last) {
+    showQuote(JSON.parse(last));
+  }
 }
 
 async function fetchQuotesFromServer() {
@@ -118,16 +127,18 @@ async function fetchQuotesFromServer() {
     const res = await fetch("https://jsonplaceholder.typicode.com/posts");
     const data = await res.json();
     const serverQuotes = data.slice(0, 10).map(p => ({ text: p.title, category: "Server" }));
-    handleServerData(serverQuotes);
+    resolveConflictsAndSync(serverQuotes);
   } catch (err) {
-    console.error("Failed to fetch server quotes:", err);
+    console.error("Error fetching server quotes:", err);
   }
 }
 
-function handleServerData(serverQuotes) {
+function resolveConflictsAndSync(serverQuotes) {
   let updated = false;
   serverQuotes.forEach(serverQuote => {
-    const exists = quotes.some(q => q.text === serverQuote.text && q.category === serverQuote.category);
+    const exists = quotes.some(local =>
+      local.text === serverQuote.text && local.category === serverQuote.category
+    );
     if (!exists) {
       quotes.push(serverQuote);
       updated = true;
@@ -141,17 +152,10 @@ function handleServerData(serverQuotes) {
   }
 }
 
-function loadLastQuote() {
-  const last = sessionStorage.getItem("lastQuote");
-  if (last) {
-    showQuote(JSON.parse(last));
-  }
-}
-
 document.addEventListener("DOMContentLoaded", () => {
   loadQuotes();
   populateCategories();
   loadLastQuote();
   document.getElementById("newQuote").addEventListener("click", showRandomQuote);
-  setInterval(fetchQuotesFromServer, 10000); // every 10 seconds
+  setInterval(fetchQuotesFromServer, 10000); // Fetch every 10 seconds
 });
